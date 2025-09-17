@@ -1,25 +1,32 @@
-import React, { useState, useCallback } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer, Polyline, Autocomplete } from '@react-google-maps/api';
+import React, { useState, useCallback, useRef } from 'react';
+import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer, Autocomplete, OverlayView } from '@react-google-maps/api';
 import { FaMapMarkerAlt, FaArrowRight, FaCar, FaBicycle, FaMotorcycle } from 'react-icons/fa';
+import { uberMapStyle } from '../../constant/mapsStyle';
 
 const containerStyle = {
   width: '100%',
   height: '100%'
 };
 
-const center = {
-  lat: 40.7128, // Default to New York
+const defaultCenter = {
+  lat: 40.7128,
   lng: -74.0060
 };
 
-const libraries = ['places'];
+const libraries = ['places', 'geometry'];
 
 const Dashboard = () => {
   const [pickup, setPickup] = useState('');
   const [destination, setDestination] = useState('');
+  const [pickupLocation, setPickupLocation] = useState(null);
+  const [destinationLocation, setDestinationLocation] = useState(null);
   const [isRouteVisible, setIsRouteVisible] = useState(false);
   const [directions, setDirections] = useState(null);
   const [map, setMap] = useState(null);
+  const [mapCenter, setMapCenter] = useState(defaultCenter);
+  
+  const pickupAutocompleteRef = useRef(null);
+  const destinationAutocompleteRef = useRef(null);
 
   // Load your Google Maps API key from environment variables
   const { isLoaded } = useJsApiLoader({
@@ -36,24 +43,100 @@ const Dashboard = () => {
     setMap(null);
   }, []);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (pickup && destination) {
-      calculateRoute();
+  const onPickupLoad = (autocomplete) => {
+    pickupAutocompleteRef.current = autocomplete;
+  };
+
+  const onDestinationLoad = (autocomplete) => {
+    destinationAutocompleteRef.current = autocomplete;
+  };
+
+  const onPickupPlaceChanged = () => {
+    if (pickupAutocompleteRef.current) {
+      const place = pickupAutocompleteRef.current.getPlace();
+      if (place.geometry) {
+        const location = {
+          lat: place.geometry.location.lat(),
+          lng: place.geometry.location.lng()
+        };
+        setPickupLocation(location);
+        setMapCenter(location);
+        setPickup(place.formatted_address);
+        
+        // If we already have a destination, calculate the route
+        if (destinationLocation) {
+          calculateRoute(location, destinationLocation);
+        }
+      }
     }
   };
 
-  const calculateRoute = async () => {
-    // In a real app, you would use the Google Maps Directions Service
-    // For this example, we'll just simulate it
-    setIsRouteVisible(true);
+  const onDestinationPlaceChanged = () => {
+    if (destinationAutocompleteRef.current) {
+      const place = destinationAutocompleteRef.current.getPlace();
+      if (place.geometry) {
+        const location = {
+          lat: place.geometry.location.lat(),
+          lng: place.geometry.location.lng()
+        };
+        setDestinationLocation(location);
+        setDestination(place.formatted_address);
+        
+        // If we already have a pickup location, calculate the route
+        if (pickupLocation) {
+          calculateRoute(pickupLocation, location);
+        }
+      }
+    }
+  };
 
-    // This is where you would make the actual Directions API call
-    // For now, we'll just set a mock directions response
-    setTimeout(() => {
-      // Simulating route calculation
-      setIsRouteVisible(true);
-    }, 1000);
+ const calculateRoute = (origin, destination) => {
+  if (!window.google || !map) return;
+
+  const directionsService = new window.google.maps.DirectionsService();
+
+  directionsService.route(
+    {
+      origin,
+      destination,
+      travelMode: google.maps.TravelMode.DRIVING,
+    },
+    (result, status) => {
+      if (status === "OK") {
+        setDirections(result);
+        setIsRouteVisible(true);
+
+        // Fit map to route
+        const bounds = new google.maps.LatLngBounds();
+        result.routes[0].overview_path.forEach((p) => bounds.extend(p));
+        map.fitBounds(bounds);
+      } else {
+        console.error("Directions request failed:", status);
+      }
+    }
+  );
+};
+
+
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (pickupLocation && destinationLocation) {
+      calculateRoute(pickupLocation, destinationLocation);
+    }
+  };
+
+  // Function to create custom SVG marker
+  const createSvgMarker = (color) => {
+    return {
+      url: "data:image/svg+xml;base64," + btoa(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+          <path fill="${color}" d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/>
+        </svg>
+      `),
+      scaledSize: new window.google.maps.Size(30, 30),
+      anchor: { x: 12, y: 24 }
+    };
   };
 
   return (
@@ -64,23 +147,21 @@ const Dashboard = () => {
           <img src="./logo.png" className='w-14' alt="" />
         </div>
      
-          <nav className="hidden md:flex space-x-6">
-            <a href="#" className="hover:text-gray-300">Transport</a>
-            <a href="#" className="hover:text-gray-300">Provide</a>
-            <a href="#" className="hover:text-gray-300">About</a>
-            <a href="#" className="hover:text-gray-300">Help</a>
-          </nav>
-          <div className="flex items-center space-x-4">
-            <button className="text-white px-4 py-2 rounded-full font-medium">
-              Sign in
-            </button>
-            <button className="bg-white text-black px-4 py-2 rounded-full font-medium">
-              Sign Up
-            </button>
-            <button className="md:hidden">☰</button>
-          </div>
-   
-
+        <nav className="hidden md:flex space-x-6">
+          <a href="#" className="hover:text-gray-300">Transport</a>
+          <a href="#" className="hover:text-gray-300">Provide</a>
+          <a href="#" className="hover:text-gray-300">About</a>
+          <a href="#" className="hover:text-gray-300">Help</a>
+        </nav>
+        <div className="flex items-center space-x-4">
+          <button className="text-white px-4 py-2 rounded-full font-medium">
+            Sign in
+          </button>
+          <button className="bg-white text-black px-4 py-2 rounded-full font-medium">
+            Sign Up
+          </button>
+          <button className="md:hidden">☰</button>
+        </div>
       </header>
 
       {/* Main Content */}
@@ -90,7 +171,7 @@ const Dashboard = () => {
           {isLoaded ? (
             <GoogleMap
               mapContainerStyle={containerStyle}
-              center={center}
+              center={mapCenter}
               zoom={12}
               onLoad={onLoad}
               onUnmount={onUnmount}
@@ -98,61 +179,77 @@ const Dashboard = () => {
                 streetViewControl: false,
                 mapTypeControl: false,
                 fullscreenControl: false,
-                styles: [
-                  {
-                    featureType: "poi",
-                    elementType: "labels",
-                    stylers: [{ visibility: "off" }]
-                  }
-                ]
+                styles: uberMapStyle
               }}
             >
-              {/* Origin marker */}
-              {isRouteVisible && (
-                <Marker
-                  position={{ lat: 40.7128, lng: -74.0060 }}
-                  icon={{
-                    url: "data:image/svg+xml;base64," + btoa(`
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10" fill="#000000"/>
-                        <circle cx="12" cy="12" r="4" fill="#FFFFFF"/>
-                      </svg>
-                    `)
-                  }}
-                />
-              )}
+           
+           {/* Pickup marker */}
+{pickupLocation && (
+  <>
+    <Marker
+      position={pickupLocation}
+      icon={{
+        path: window.google.maps.SymbolPath.CIRCLE,
+        fillColor: "#00FF00",
+        fillOpacity: 1,
+        strokeWeight: 2,
+        strokeColor: "#fff",
+        scale: 10,
+      }}
+    />
+  <OverlayView
+  position={pickupLocation}
+  mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+>
+  <div className=" px-3 py-1 shadow-md text-sm font-medium w-2xl">
+    <div className="w-fit p-2 bg-white">
+      From: {pickup}
+    </div>
+  </div>
+</OverlayView>
+  </>
+)}
 
-              {/* Destination marker */}
-              {isRouteVisible && (
-                <Marker
-                  position={{ lat: 40.7282, lng: -73.9842 }}
-                  icon={{
-                    url: "data:image/svg+xml;base64," + btoa(`
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10" fill="#000000"/>
-                        <circle cx="12" cy="12" r="4" fill="#FFFFFF"/>
-                      </svg>
-                    `)
-                  }}
-                />
-              )}
+{/* Destination marker */}
+{destinationLocation && (
+  <>
+    <Marker
+      position={destinationLocation}
+      icon={{
+        path: window.google.maps.SymbolPath.CIRCLE,
+        fillColor: "#FF0000",
+        fillOpacity: 1,
+        strokeWeight: 2,
+        strokeColor: "#fff",
+        scale: 10,
+      }}
+    />
+    <OverlayView
+      position={destinationLocation}
+      mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+    >
+     <div className=" px-3 py-1 shadow-md text-sm font-medium w-2xl">
+    <div className="w-fit p-2 bg-white">
+      To: {destination}
+    </div>
+  </div>
+    </OverlayView>
+  </>
+)}
 
-              {/* Curved route line (simulated) */}
-              {isRouteVisible && (
-                <Polyline
-                  path={[
-                    { lat: 40.7128, lng: -74.0060 },
-                    { lat: 40.720, lng: -73.9950 },
-                    { lat: 40.7282, lng: -73.9842 }
-                  ]}
-                  options={{
-                    strokeColor: "#FFD700",
-                    strokeOpacity: 1,
-                    strokeWeight: 4,
-                    geodesic: true
-                  }}
-                />
-              )}
+
+            {isRouteVisible && directions && (
+  <DirectionsRenderer
+    directions={directions}
+    options={{
+      polylineOptions: {
+        strokeColor: "#FFD700",
+        strokeWeight: 2,
+      },
+      suppressMarkers: true, // hide Google’s default A/B markers since you already added custom ones
+    }}
+  />
+)}
             </GoogleMap>
           ) : (
             <div className="absolute inset-0 bg-blue-200 flex items-center justify-center">
@@ -167,58 +264,45 @@ const Dashboard = () => {
 
           <form onSubmit={handleSubmit}>
             <div className="space-y-4">
-             {/* Pickup */}
-<div className="flex items-center border border-gray-300 rounded-lg p-3">
-  <FaMapMarkerAlt className="text-gray-600 mr-3" />
-  {isLoaded && (
-    <Autocomplete>
-      <input
-        type="text"
-        placeholder="Enter pickup location"
-        className="w-full outline-none"
-        value={pickup}
-        onChange={(e) => setPickup(e.target.value)}
-      />
-    </Autocomplete>
-  )}
-</div>
+              {/* Pickup */}
+              <div className="flex items-center border border-gray-300 rounded-lg p-3">
+                <FaMapMarkerAlt className="text-gray-600 mr-3" />
+                {isLoaded && (
+                  <Autocomplete
+                    onLoad={onPickupLoad}
+                    onPlaceChanged={onPickupPlaceChanged}
+                  >
+                    <input
+                      type="text"
+                      placeholder="Enter pickup location"
+                      className="w-full outline-none"
+                      value={pickup}
+                      onChange={(e) => setPickup(e.target.value)}
+                    />
+                  </Autocomplete>
+                )}
+              </div>
 
-{/* Destination */}
-<div className="flex items-center border border-gray-300 rounded-lg p-3">
-  <FaArrowRight className="text-gray-600 mr-3" />
-  {isLoaded && (
-    <Autocomplete>
-      <input
-        type="text"
-        placeholder="Enter destination"
-        className="w-full outline-none"
-        value={destination}
-        onChange={(e) => setDestination(e.target.value)}
-      />
-    </Autocomplete>
-  )}
-</div>
-
-            </div>
-            {/*             
-            <div className="mt-8">
-              <h3 className="font-semibold mb-3">Choose a ride type:</h3>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="border rounded-lg p-3 text-center cursor-pointer hover:bg-gray-100">
-                  <FaCar className="text-2xl mx-auto mb-2" />
-                  <span className="text-sm">TransiveX</span>
-                </div>
-                <div className="border rounded-lg p-3 text-center cursor-pointer hover:bg-gray-100">
-                  <FaCar className="text-2xl mx-auto mb-2 text-blue-500" />
-                  <span className="text-sm">Transive Comfort</span>
-                </div>
-                <div className="border rounded-lg p-3 text-center cursor-pointer hover:bg-gray-100">
-                  <FaBicycle className="text-2xl mx-auto mb-2" />
-                  <span className="text-sm">Transive Bike</span>
-                </div>
+              {/* Destination */}
+              <div className="flex items-center border border-gray-300 rounded-lg p-3">
+                <FaArrowRight className="text-gray-600 mr-3" />
+                {isLoaded && (
+                  <Autocomplete
+                    onLoad={onDestinationLoad}
+                    onPlaceChanged={onDestinationPlaceChanged}
+                  >
+                    <input
+                      type="text"
+                      placeholder="Enter destination"
+                      className="w-full outline-none"
+                      value={destination}
+                      onChange={(e) => setDestination(e.target.value)}
+                    />
+                  </Autocomplete>
+                )}
               </div>
             </div>
-             */}
+
             <button
               type="submit"
               className={`w-full mt-6 py-3 rounded-lg font-medium ${pickup && destination

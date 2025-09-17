@@ -2,8 +2,51 @@ import express from "express";
 import bcrypt from "bcrypt";
 import db from "../server/server.js";
 import { generateResetToken } from "../utils/helper.js";
-
+import authenticateToken from "../middleware/middleware.js";
 const router = express.Router();
+
+
+router.get("/current_user", authenticateToken, async (req, res) => {
+  const userUID = req.user.uid;
+  const { time_zone } = req.query;
+
+  try {
+    const result = await db.query(`SELECT * FROM users WHERE uid = $1`, [
+      userUID,
+    ]);
+    const user = result.rows[0];
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if values are provided and non-empty
+    const validTimeZone =
+      time_zone && time_zone.trim() !== "" ? time_zone : null;
+
+    // Only update the fields that are provided and non-empty
+    if (validTimeZone) {
+      await db.query(
+        `UPDATE users
+         SET time_zone = COALESCE($1, time_zone)
+         WHERE uid = $2`,
+        [validTimeZone, userUID],
+      );
+
+      const updatedResult = await db.query(
+        `SELECT * FROM users WHERE uid = $1`,
+        [userUID],
+      );
+      return res.status(200).json(updatedResult.rows[0]);
+    }
+
+    // If both are empty, return user without update
+    return res.status(200).json(user);
+  } catch (err) {
+    console.error("Error fetching users:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 // Forgot Password
 router.post("/forgot-password", async (req, res) => {

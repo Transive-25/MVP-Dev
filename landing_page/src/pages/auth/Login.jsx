@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import { API } from '../../api/api';
+import { saveToken } from '../../helper/tokenHandler';
 
 const Login = () => {
+
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -44,17 +47,27 @@ const Login = () => {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const formErrors = validateForm();
     
     if (Object.keys(formErrors).length === 0) {
       setIsSubmitting(true);
-      // Simulate API call
-      setTimeout(() => {
-        setIsSubmitting(false);
-        alert('Login successful!');
-      }, 1500);
+      try {
+        const response = await API.loginUserAccount({email: formData.email, password: formData.password})
+        console.log(response.data)
+        location.href = '/dashboard/mainboard'
+        saveToken(response.data.accessToken)
+      } catch (error) {
+        console.log(error);
+        if(error.message === "User not found"){
+          setErrors({email: "User not found"})
+        } else {
+          setErrors({password: "Invalid Password"})
+        }
+      } finally {
+        setIsSubmitting(false)
+      }
     } else {
       setErrors(formErrors);
     }

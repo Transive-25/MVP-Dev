@@ -6,7 +6,7 @@ const Footer = () => {
             <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
               <div>
                 <div className="flex items-center mb-4">
-                  <img src="./logo.png" className="w-10 h-10 mr-2" alt="Transive" />
+                  <img src="/logo.png" className="w-10 h-10 mr-2" alt="Transive" />
                 </div>
                 <p className="text-gray-400">Moving you safely and comfortably to your destination.</p>
               </div>

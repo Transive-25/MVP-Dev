@@ -8,6 +8,7 @@ dotenv.config();
 const router = express.Router();
 const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
+const SECRET = process.env.JWT_SECRET;
 
 
 // REGISTER
@@ -17,13 +18,33 @@ router.post("/register", async (req, res) => {
 
     // check if email exists
     const existing = await db.query("SELECT * FROM users WHERE email = $1", [email]);
-    if (existing.rows.length > 0) {
-      return res.status(400).json({ message: "Email already in use" });
-    }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiration = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+    if (existing.rows.length > 0) {
+      const user = existing.rows[0];
+
+      if (user.is_verified) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+
+      // if not verified, update verification code
+      await db.query(
+        `UPDATE users 
+         SET verification_code = $1, verification_code_expiration = $2
+         WHERE email = $3`,
+        [verificationCode, expiration, email]
+      );
+
+      // TODO: re-send verification email/SMS
+      console.log("Resent verification code:", verificationCode);
+
+      return res.status(200).json({ message: "Verification code resent." });
+    }
+
+    // otherwise create a new user
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     await db.query(
       `INSERT INTO users 
@@ -50,6 +71,45 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+router.patch("/resend-verification", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Check if user exists
+    const existing = await db.query("SELECT * FROM users WHERE email = $1", [email]);
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const user = existing.rows[0];
+
+    if (user.is_verified) {
+      return res.status(400).json({ message: "Account already verified" });
+    }
+
+    // Generate new code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiration = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+    await db.query(
+      `UPDATE users 
+       SET verification_code = $1, verification_code_expiration = $2
+       WHERE email = $3`,
+      [verificationCode, expiration, email]
+    );
+
+    // TODO: send code via email/SMS
+    console.log("Resent verification code:", verificationCode);
+
+    res.status(200).json({ message: "Verification code resent." });
+  } catch (err) {
+    console.error("Resend verification error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 
 // VERIFY
 router.post("/verify", async (req, res) => {
@@ -85,49 +145,71 @@ router.post("/verify", async (req, res) => {
 
 // LOGIN
 router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+
   try {
-    const { email, password } = req.body;
-
-    const result = await db.query("SELECT * FROM users WHERE email = $1", [email]);
-    if (result.rows.length === 0) return res.status(404).json({ message: "User not found" });
-
+    const result = await db.query("SELECT * FROM users WHERE email = $1", [
+      email,
+    ]);
     const user = result.rows[0];
 
-    if (!user.is_verified) return res.status(401).json({ message: "Account not verified" });
+    if (!user) {
+      return res.status(400).json({ type: "emai", message: "User not found" });
+    }
 
-    const validPass = await bcrypt.compare(password, user.password);
-    if (!validPass) return res.status(401).json({ message: "Invalid credentials" });
+    const validPassword = await bcrypt.compare(password, user.password);
 
-    const payload = { uid: user.uid, email: user.email };
-    const accessToken = jwt.sign(payload, ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
-    const refreshToken = jwt.sign(payload, REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+    if (!validPassword) {
+      return res
+        .status(401)
+        .json({ type: "password", message: "Invalid password" });
+    }
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+    // ✋ Check if student is not verified
+    if (!user.is_verified) {
+      return res.status(403).json({
+        message: "Email not verified. Please verify your account to continue.",
+        status: "verification",
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        phone_number: user.phone_number,
+        time_zone: user.time_zone,
+        uid: user.uid,
+        role: user.role,
+      },
+      SECRET,
+      { expiresIn: '1d' },
+    );
+
+    res.json({
+      user: user.email,
+      accessToken: token,
+      status: "success",
     });
-
-    res.json({ accessToken });
   } catch (err) {
-    console.error("Login error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error(err);
+    res.status(500).send("Server error");
   }
 });
 
 // REFRESH
 router.post("/refresh", (req, res) => {
-  const token = req.cookies.refreshToken;
-  if (!token) return res.sendStatus(401);
+  const refreshToken = req.cookies.refreshToken;
+  if (!refreshToken) return res.status(401).json({ message: "No refresh token" });
 
-  jwt.verify(token, REFRESH_TOKEN_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
+  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ message: "Invalid refresh token" });
 
-    const payload = { uid: user.uid, email: user.email };
-    const accessToken = jwt.sign(payload, ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
+    const accessToken = jwt.sign({ uid: user.uid }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "1d" });
     res.json({ accessToken });
   });
 });
+
 
 // LOGOUT
 router.post("/logout", (req, res) => {

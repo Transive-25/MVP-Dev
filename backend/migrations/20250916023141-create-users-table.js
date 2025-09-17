@@ -36,6 +36,14 @@ export async function up(queryInterface, Sequelize) {
       type: Sequelize.DATE,
       allowNull: true,
     },
+    verification_token: {
+      type: Sequelize.STRING,
+      allowNull: true,
+    },
+    verification_token_expiration: {
+      type: Sequelize.DATE,
+      allowNull: true,
+    },
     time_zone: {
       type: Sequelize.STRING,
       allowNull: true,
@@ -44,6 +52,11 @@ export async function up(queryInterface, Sequelize) {
       type: Sequelize.BOOLEAN,
       allowNull: false,
       defaultValue: false,
+    },
+    role: {
+      type: Sequelize.STRING,
+      allowNull: false,
+      defaultValue: 'user',
     },
     created_at: {
       type: Sequelize.DATE,

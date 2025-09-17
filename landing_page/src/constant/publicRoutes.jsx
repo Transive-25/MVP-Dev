@@ -1,3 +1,4 @@
+import DashboardLayout from "../layout/DashboardLayout";
 import Login from "../pages/auth/Login";
 import Registration from "../pages/auth/Registration";
 import Dashboard from "../pages/dashboard/Dashboard";
@@ -18,5 +19,17 @@ export const PUBLIC_ROUTES = [
     path: '/register',
     element: <Registration />,
     isPrivate: false,
-  }
+  },
+    {
+    path: '/dashboard/*',
+    element: <DashboardLayout />,
+    isPrivate: true,
+  },
+];
+
+export const PRIVATE_ROUTES = [
+  {
+    path: '*',
+    element: <Dashboard />,
+  },
 ];

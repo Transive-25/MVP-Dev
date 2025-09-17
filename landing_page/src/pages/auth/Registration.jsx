@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { FaEnvelope, FaLock, FaUser, FaPhone, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import VerificationModal from '../../components/modal/VerificationCode';
+import { API } from '../../api/api';
+import { useNavigate } from 'react-router-dom';
 
 const Registration = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -14,6 +18,7 @@ const Registration = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -64,21 +69,48 @@ const Registration = () => {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const formErrors = validateForm();
     
     if (Object.keys(formErrors).length === 0) {
       setIsSubmitting(true);
       // Simulate API call
-      setTimeout(() => {
+      const payload = {
+        full_name: formData.name, email: formData.email, password: formData.password, phone_number: formData.phone,
+      }
+
+      try {
+        const response = await API.createUserAccount(payload);
+        console.log(response.data)
+        if(response.data){
+                setTimeout(() => {
         setIsSubmitting(false);
-        alert('Registration successful!');
+        setShowVerification(true)
       }, 1500);
+        }
+      } catch (error) {
+        console.log(error)
+        alert('Something went wrong')
+          setIsSubmitting(false);
+      }
     } else {
       setErrors(formErrors);
     }
   };
+
+  const handleVerifyAccount = async (code) => {
+    try {
+      const response = await API.verifyAccount({email: formData.email, code})
+      if(response.data){
+        navigate('/login')
+        alert("Successfully Created")
+      }
+    } catch (error) {
+      console.log(error)
+      alert("Invalid Code or Expired")
+    }
+  }
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
@@ -90,6 +122,9 @@ const Registration = () => {
               <h2 className="text-2xl font-bold">Create Account</h2>
             </div>
           </div>
+
+
+          <VerificationModal isOpen={showVerification} onClose={()=> setShowVerification(false)} email={formData.email} onVerify={handleVerifyAccount}/>
           
           <form onSubmit={handleSubmit} className="space-y-6">
          
