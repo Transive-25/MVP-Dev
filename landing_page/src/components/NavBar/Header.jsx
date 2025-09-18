@@ -7,9 +7,9 @@ const Header = () => {
   const { currentUser, handleLogout } = useAuth();
 
   return (
-    <header className="bg-black text-white flex items-center px-6 py-4 justify-around fixed w-full z-50">
+    <header className="bg-black text-white flex items-center px-6 py-4 justify-around w-full z-50">
         <div  onClick={() => navigate("/")} className="flex hover:cursor-pointer gap-2 items-center">
-          <img src="/logo.png" className="w-12 h-12 mr-3" alt="Transive" />
+          <img src="/logo.png" className="w-16 h-16 mr-3" alt="Transive" />
         </div>
      
         <nav className="hidden md:flex space-x-6">

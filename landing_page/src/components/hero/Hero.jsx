@@ -2,13 +2,16 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { FaMapMarkerAlt, FaArrowRight } from 'react-icons/fa';
 import { GoogleMap, useJsApiLoader, Marker, Autocomplete } from '@react-google-maps/api';
+import AutoCompleteInput from '../UI/AutoCompleteTextInput';
+import { defaultCenter, landingpageMap } from '../../constant/mapsStyle';
+import DateInput from '../UI/DateInput';
+import TimeInput from '../UI/TimeInput';
 
 const Hero = () => {
   const [pickup, setPickup] = useState('');
   const [destination, setDestination] = useState('');
   const [pickupLocation, setPickupLocation] = useState(null);
   const [destinationLocation, setDestinationLocation] = useState(null);
-  const [mapCenter, setMapCenter] = useState({ lat: 40.7128, lng: -74.0060 });
   const pickupRef = useRef(null);
   const destinationRef = useRef(null);
   const mapRef = useRef(null);
@@ -27,7 +30,7 @@ const Hero = () => {
       const bounds = new window.google.maps.LatLngBounds();
       bounds.extend(new window.google.maps.LatLng(pickupLocation.lat, pickupLocation.lng));
       bounds.extend(new window.google.maps.LatLng(destinationLocation.lat, destinationLocation.lng));
-      
+
       // Fit map to bounds with padding
       mapRef.current.fitBounds(bounds, {
         top: 50,
@@ -44,7 +47,7 @@ const Hero = () => {
       let autocompleteRef;
       let setLocation;
       let setValue;
-      
+
       if (type === 'pickup') {
         autocompleteRef = pickupRef.current;
         setLocation = setPickupLocation;
@@ -54,7 +57,7 @@ const Hero = () => {
         setLocation = setDestinationLocation;
         setValue = setDestination;
       }
-      
+
       if (autocompleteRef) {
         place = autocompleteRef.getPlace();
         if (place && place.geometry) {
@@ -62,21 +65,20 @@ const Hero = () => {
             lat: place.geometry.location.lat(),
             lng: place.geometry.location.lng()
           };
-          
+
           setLocation(location);
-          setValue(place.name);
-          
-          // Center map immediately after selecting a place
-          if (pickupLocation && destinationLocation) {
-            centerMapOnLocations();
-          } else if (type === 'pickup') {
-            // If only pickup is selected, center on pickup
-            mapRef.current.panTo(location);
-            mapRef.current.setZoom(15);
-          } else {
-            // If only destination is selected, center on destination
-            mapRef.current.panTo(location);
-            mapRef.current.setZoom(15);
+          setValue(`${place.name}, ${place.formatted_address}`);
+          console.log(place)
+
+          if (mapRef.current) {
+            if (pickupLocation && destinationLocation) {
+              // Center on both locations
+              centerMapOnLocations();
+            } else {
+              // Center on the newly selected location
+              mapRef.current.panTo(location);
+              mapRef.current.setZoom(15);
+            }
           }
         }
       }
@@ -155,20 +157,21 @@ const Hero = () => {
   }, [pickupLocation, destinationLocation]);
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col md:flex-row items-center px-4 md:px-20 gap-10">
-      {/* Left side - Form */}
-      <div className="flex-1 flex flex-col justify-center">
-        <motion.h1 
+    <div className="md:min-h-screen min-h-full dark:bg-black bg-white dark:text-white text-black flex flex-col md:flex-row justify-center 2xl:px-60 lg:px-20 md:px-10 px-5 sm:px-4">
+      <div className="flex md:flex-row flex-col items-center w-full h-fit gap-10 md:mt-32 mt-20 md:mb-0 mb-20">
+          {/* Left side - Form */}
+      <div className="w-full flex flex-col justify-center">
+        <motion.h1
           className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
-           Move anything with <span className="text-white">Transive</span>
+          Move anything with <span className="text-yellow-500">Transive</span>
         </motion.h1>
-        
-        <motion.p 
-          className="text-lg text-gray-300 mb-8"
+
+        <motion.p
+          className="text-lg text-gray-700 mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
@@ -177,76 +180,39 @@ const Hero = () => {
         </motion.p>
 
         <div className="space-y-4 mb-6">
-          <div className="bg-gray-900 rounded-lg p-3 flex items-center">
-            <div className="bg-green-500 rounded-full p-2 mr-3">
-              <FaMapMarkerAlt className="text-white" />
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm text-gray-400 mb-1">Pickup location</label>
-              {isLoaded ? (
-                <Autocomplete
-                  onLoad={autocomplete => {
-                    pickupRef.current = autocomplete;
-                  }}
-                  onPlaceChanged={handlePlaceSelect('pickup')}
-                >
-                  <input
-                    type="text"
-                    placeholder="Enter pickup location"
-                    value={pickup}
-                    onChange={(e) => setPickup(e.target.value)}
-                    className="w-full bg-transparent text-white outline-none"
-                  />
-                </Autocomplete>
-              ) : (
-                <input
-                  type="text"
-                  placeholder="Enter pickup location"
-                  value={pickup}
-                  onChange={(e) => setPickup(e.target.value)}
-                  className="w-full bg-transparent text-white outline-none"
-                />
-              )}
-            </div>
-          </div>
+          <AutoCompleteInput
+            label="Pickup location"
+            icon={<FaMapMarkerAlt className="text-white" />}
+            value={pickup}
+            onChange={(e) => setPickup(e.target.value)}
+            placeholder="Enter pickup location"
+            isLoaded={isLoaded}
+            ref={pickupRef}
+            onPlaceChanged={handlePlaceSelect("pickup")}
+          />
 
-          <div className="bg-gray-900 rounded-lg p-3 flex items-center">
-            <div className="bg-red-500 rounded-full p-2 mr-3">
-              <FaMapMarkerAlt className="text-white" />
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm text-gray-400 mb-1">Dropoff location</label>
-              {isLoaded ? (
-                <Autocomplete
-                  onLoad={autocomplete => {
-                    destinationRef.current = autocomplete;
-                  }}
-                  onPlaceChanged={handlePlaceSelect('destination')}
-                >
-                  <input
-                    type="text"
-                    placeholder="Enter destination"
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                    className="w-full bg-transparent text-white outline-none"
-                  />
-                </Autocomplete>
-              ) : (
-                <input
-                  type="text"
-                  placeholder="Enter destination"
-                  value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
-                  className="w-full bg-transparent text-white outline-none"
-                />
-              )}
-            </div>
+          <AutoCompleteInput
+            label="Dropoff locations"
+            icon={<FaMapMarkerAlt className="text-white" />}
+            iconBg="bg-red-500"
+            value={destination}
+            onChange={(e) => setDestination(e.target.value)}
+            placeholder="Enter dropoff location"
+            isLoaded={isLoaded}
+            ref={destinationRef}
+            onPlaceChanged={handlePlaceSelect('destination')}
+
+          />
+
+          <div className="flex gap-1 w-full items-start">
+            <DateInput label={"Select a date"}/>
+          <TimeInput label={"Select a time"} />
           </div>
         </div>
 
         <motion.button
           onClick={handleSeePrices}
-          className="bg-white text-black font-medium hover:cursor-pointer rounded-lg px-6 py-3 flex items-center justify-center w-full disabled:opacity-50 disabled:cursor-not-allowed"
+          className="dark:bg-white bg-gray-900 dark:text-black text-white font-medium hover:cursor-pointer rounded-lg px-6 py-3 flex items-center justify-center w-full disabled:opacity-50 disabled:cursor-not-allowed"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           initial={{ opacity: 0, y: 20 }}
@@ -256,7 +222,7 @@ const Hero = () => {
           See prices <FaArrowRight className="ml-2" />
         </motion.button>
 
-        <motion.p 
+        <motion.p
           className="text-gray-400 mt-6 text-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -267,93 +233,63 @@ const Hero = () => {
       </div>
 
       {/* Right side - Map */}
-      <div className="flex-1 h-screen py-44">
-       <div className="h-full border-4 border-white rounded-2xl overflow-hidden shadow-2xl shadow-gray-800">
-         {isLoaded ? (
-          <GoogleMap
-            mapContainerStyle={{ width: '100%', height: '100%' }}
-            center={mapCenter}
-            zoom={13}
-            onLoad={onMapLoad}
-            options={{
-              styles: [
-                {
-                  featureType: "all",
-                  elementType: "labels",
-                  stylers: [{ visibility: "off" }]
-                },
-                {
-                  featureType: "all",
-                  elementType: "geometry",
-                  stylers: [{ color: "#1c1c1c" }]
-                },
-                {
-                  featureType: "all",
-                  elementType: "labels.text.stroke",
-                  stylers: [{ visibility: "off" }]
-                },
-                {
-                  featureType: "all",
-                  elementType: "labels.text.fill",
-                  stylers: [{ color: "#ffffff" }]
-                },
-                {
-                  featureType: "water",
-                  elementType: "geometry",
-                  stylers: [{ color: "#2c2c2c" }]
-                },
-                {
-                  featureType: "road",
-                  elementType: "geometry",
-                  stylers: [{ color: "#3c3c3c" }]
-                }
-              ],
-              disableDefaultUI: true,
-              draggable: false,
-              zoomControl: false,
-              scrollwheel: false,
-              disableDoubleClickZoom: true,
-              keyboardShortcuts: false
-            }}
-          >
-            {/* Pickup Marker */}
-            {pickupLocation && (
-              <Marker
-                position={pickupLocation}
-                icon={{
-                  url: "data:image/svg+xml;base64," + btoa(`
+      <div className="w-full h-96 2xl:h-[35rem] xl:h-[30rem] lg:h-[25rem]">
+        <div className="h-full border-4 dark:border-white border-gray-800 rounded-2xl overflow-hidden shadow-2xl shadow-gray-6900">
+          {isLoaded ? (
+            <GoogleMap
+              mapContainerStyle={{ width: '100%', height: '100%' }}
+              center={defaultCenter}
+              zoom={13}
+              onLoad={onMapLoad}
+              options={{
+                styles: landingpageMap,
+                disableDefaultUI: true,
+                draggable: false,
+                zoomControl: false,
+                scrollwheel: false,
+                disableDoubleClickZoom: true,
+                keyboardShortcuts: false
+              }}
+            >
+              {/* Pickup Marker */}
+              {pickupLocation && (
+                <Marker
+                  position={pickupLocation}
+                  icon={{
+                    url: "data:image/svg+xml;base64," + btoa(`
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="green" stroke="white" stroke-width="2">
                       <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/>
                     </svg>
                   `),
-                  scaledSize: new window.google.maps.Size(30, 30),
-                  anchor: { x: 12, y: 24 }
-                }}
-              />
-            )}
-            
-            {/* Destination Marker */}
-            {destinationLocation && (
-              <Marker
-                position={destinationLocation}
-                icon={{
-                  url: "data:image/svg+xml;base64," + btoa(`
+                    scaledSize: new window.google.maps.Size(30, 30),
+                    anchor: { x: 12, y: 24 }
+                  }}
+                />
+              )}
+
+              {/* Destination Marker */}
+              {destinationLocation && (
+                <Marker
+                  position={destinationLocation}
+                  icon={{
+                    url: "data:image/svg+xml;base64," + btoa(`
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="red" stroke="white" stroke-width="2">
                       <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/>
                     </svg>
                   `),
-                  scaledSize: new window.google.maps.Size(30, 30),
-                  anchor: { x: 12, y: 24 }
-                }}
-              />
-            )}
-          </GoogleMap>
-        ) : (
-          <div className="w-full h-full bg-gray-900 flex items-center justify-center">
-            <div className="animate-pulse text-white">Loading Map...</div>
-          </div>
-        )}
-       </div>
+                    scaledSize: new window.google.maps.Size(30, 30),
+                    anchor: { x: 12, y: 24 }
+                  }}
+                />
+              )}
+            </GoogleMap>
+          ) : (
+            <div className="w-full h-full bg-gray-900 flex items-center justify-center">
+              <div className="animate-pulse text-white">Loading Map...</div>
+            </div>
+          )}
+        </div>
+      </div>
       </div>
     </div>
   );

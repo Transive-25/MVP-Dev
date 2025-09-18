@@ -1,13 +1,11 @@
 import { useState, useContext, createContext, useEffect } from "react";
 import { API } from "../api/api";
 import { clearToken } from "../helper/tokenHandler";
-import { useNavigate } from "react-router-dom";
 
 export const AuthenticatedContext = createContext();
 
 export const AuthenticatedProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState(null);
-    const navigate = useNavigate();
     const fetchUserDetails = async () => {
         try {
             const response = await API.currentUserInfo();

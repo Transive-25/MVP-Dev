@@ -1,9 +1,8 @@
 import React, { forwardRef } from "react";
 import { Autocomplete } from "@react-google-maps/api";
 
-const AutoCompleteInput = forwardRef(
+const AutoCompleteTextInputVersion2 = forwardRef(
   ({ 
-    label, 
     icon, 
     value, 
     onChange, 
@@ -18,11 +17,10 @@ const AutoCompleteInput = forwardRef(
     return (
       <div className="w-full">
             <div className={`${bgColor} rounded-lg p-3 flex items-center ${errorMessage ? "border-2 border-red-400" : ""}`}>
-        <div className={`${iconBg} rounded-full p-2 mr-3`}>
+        <div className={`${iconBg} rounded-full p-1.5 mr-3`}>
           {icon}
         </div>
         <div className="flex-1">
-          <label className="block text-sm text-gray-400 mb-1">{label}</label>
           {isLoaded ? (
             <Autocomplete
               onLoad={(autocomplete) => {
@@ -55,4 +53,4 @@ const AutoCompleteInput = forwardRef(
   }
 );
 
-export default AutoCompleteInput;
+export default AutoCompleteTextInputVersion2;

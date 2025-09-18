@@ -1,6 +1,25 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
 @theme {
   --color-primary: #23232a; 
   --font-poppins: "Poppins", sans-serif;
+}
+
+/* Hides the date icon (Chrome, Safari, Edge) */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
+/* Hides the time icon (Chrome, Safari, Edge) */
+input[type="time"]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
+/* Removes extra styling (Firefox) */
+input[type="date"],
+input[type="time"] {
+  -moz-appearance: textfield;
 }
