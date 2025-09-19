@@ -91,7 +91,7 @@ const Registration = () => {
         }
       } catch (error) {
         console.log(error)
-        alert('Something went wrong')
+        alert(`${error.message}`)
           setIsSubmitting(false);
       }
     } else {
@@ -113,8 +113,8 @@ const Registration = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-      <div className="bg-gray-900 rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden">
+    <div className="min-h-screen dark:bg-black bg-white dark:text-white flex items-center justify-center p-4">
+      <div className="dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden">
         <div className="p-8">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center">
@@ -143,7 +143,7 @@ const Registration = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className={`bg-gray-800 border ${errors.name ? 'border-red-500' : 'border-gray-700'} text-white rounded-lg block w-full pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500`}
+                  className={`dark:bg-gray-800 border ${errors.name ? 'border-red-500' : 'border-gray-700'} dark:text-white rounded-lg block w-full pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500`}
                   placeholder="John Doe"
                 />
               </div>
@@ -164,7 +164,7 @@ const Registration = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`bg-gray-800 border ${errors.email ? 'border-red-500' : 'border-gray-700'} text-white rounded-lg block w-full pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500`}
+                  className={`dark:bg-gray-800 border ${errors.email ? 'border-red-500' : 'border-gray-700'} dark:text-white rounded-lg block w-full pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500`}
                   placeholder="name@company.com"
                 />
               </div>
@@ -186,7 +186,7 @@ const Registration = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className={`bg-gray-800 border ${errors.phone ? 'border-red-500' : 'border-gray-700'} text-white rounded-lg block w-full pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500`}
+                  className={`dark:bg-gray-800 border ${errors.phone ? 'border-red-500' : 'border-gray-700'} dark:text-white rounded-lg block w-full pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500`}
                   placeholder="+1 234 567 8900"
                 />
               </div>
@@ -207,7 +207,7 @@ const Registration = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`bg-gray-800 border ${errors.password ? 'border-red-500' : 'border-gray-700'} text-white rounded-lg block w-full pl-10 pr-10 p-2.5 focus:ring-blue-500 focus:border-blue-500`}
+                  className={`dark:bg-gray-800 border ${errors.password ? 'border-red-500' : 'border-gray-700'} dark:text-white rounded-lg block w-full pl-10 pr-10 p-2.5 focus:ring-blue-500 focus:border-blue-500`}
                   placeholder="••••••••"
                 />
                 <button 
@@ -239,7 +239,7 @@ const Registration = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`bg-gray-800 border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-700'} text-white rounded-lg block w-full pl-10 pr-10 p-2.5 focus:ring-blue-500 focus:border-blue-500`}
+                  className={`dark:bg-gray-800 border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-700'} dark:text-white rounded-lg block w-full pl-10 pr-10 p-2.5 focus:ring-blue-500 focus:border-blue-500`}
                   placeholder="••••••••"
                 />
                 <button 
@@ -276,7 +276,7 @@ const Registration = () => {
               disabled={isSubmitting}
               whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
               whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
-              className="w-full bg-white text-black font-medium rounded-lg px-5 py-2.5 text-center hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-800 disabled:opacity-50"
+              className="w-full dark:bg-white bg-gray-900 dark:text-black text-white font-medium rounded-lg px-5 py-2.5 text-center hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-800 disabled:opacity-50"
             >
               {isSubmitting ? 'Creating account...' : 'Create account'}
             </motion.button>
@@ -284,6 +284,7 @@ const Registration = () => {
             <div className="text-sm font-medium text-gray-400">
               Already have an account?{' '}
               <button
+                onClick={()=> location.href = '/login'}
                 type="button"
                 className="text-blue-500 hover:underline"
               >

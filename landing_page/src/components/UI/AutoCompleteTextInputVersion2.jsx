@@ -9,15 +9,13 @@ const AutoCompleteTextInputVersion2 = forwardRef(
     placeholder, 
     isLoaded, 
     onPlaceChanged, 
-    bgColor = "bg-gray-900", 
     iconBg = "bg-green-500", 
-    textColor = "text-white",
     errorMessage
   }, ref) => {
     return (
       <div className="w-full">
-            <div className={`${bgColor} rounded-lg p-3 flex items-center ${errorMessage ? "border-2 border-red-400" : ""}`}>
-        <div className={`${iconBg} rounded-full p-1.5 mr-3`}>
+            <div className={`dark:bg-gray-900 border-2 dark:border-gray-700 border-gray-300  rounded-lg p-3 flex items-center ${errorMessage ? "border-2 border-red-400" : ""}`}>
+        <div className={`mr-3`}>
           {icon}
         </div>
         <div className="flex-1">
@@ -33,7 +31,7 @@ const AutoCompleteTextInputVersion2 = forwardRef(
                 placeholder={placeholder}
                 value={value}
                 onChange={onChange}
-                className={`w-full bg-transparent ${textColor} outline-none`}
+                className={`w-full bg-transparent dark:text-white outline-none`}
               />
             </Autocomplete>
           ) : (
@@ -42,7 +40,7 @@ const AutoCompleteTextInputVersion2 = forwardRef(
               placeholder={placeholder}
               value={value}
               onChange={onChange}
-              className={`w-full bg-transparent ${textColor} outline-none`}
+              className={`w-full bg-transparent outline-none`}
             />
           )}
         </div>

@@ -15,15 +15,17 @@ export const ThemeProvider = ({ children }) => {
 
   const [theme, setTheme] = useState(getInitialTheme);
 
-  // Apply theme to html and persist in localStorage
-  useEffect(() => {
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+useEffect(() => {
+  if (theme === "dark") {
+    document.documentElement.classList.add("dark");
+    document.documentElement.classList.remove("light");
+  } else {
+    document.documentElement.classList.remove("dark");
+    document.documentElement.classList.add("light");
+  }
+  localStorage.setItem("theme", theme);
+}, [theme]);
+
 
   // Toggle function
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");

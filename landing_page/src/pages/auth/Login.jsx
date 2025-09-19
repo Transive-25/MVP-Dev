@@ -74,8 +74,8 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-      <div className="bg-gray-900 rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+    <div className="min-h-screen dark:bg-black dark:text-white flex items-center justify-center p-4">
+      <div className="dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
         <div className="p-8">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center">
@@ -99,7 +99,7 @@ const Login = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`bg-gray-800 border ${errors.email ? 'border-red-500' : 'border-gray-700'} text-white rounded-lg block w-full pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500`}
+                  className={`dark:bg-gray-800 border ${errors.email ? 'border-red-500' : 'border-gray-700'} dark:text-white rounded-lg block w-full pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500`}
                   placeholder="name@company.com"
                 />
               </div>
@@ -120,7 +120,7 @@ const Login = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`bg-gray-800 border ${errors.password ? 'border-red-500' : 'border-gray-700'} text-white rounded-lg block w-full pl-10 pr-10 p-2.5 focus:ring-blue-500 focus:border-blue-500`}
+                  className={`dark:bg-gray-800 border ${errors.password ? 'border-red-500' : 'border-gray-700'} dark:text-white rounded-lg block w-full pl-10 pr-10 p-2.5 focus:ring-blue-500 focus:border-blue-500`}
                   placeholder="••••••••"
                 />
                 <button 
@@ -161,7 +161,7 @@ const Login = () => {
               disabled={isSubmitting}
               whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
               whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
-              className="w-full bg-white text-black font-medium rounded-lg px-5 py-2.5 text-center hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-800 disabled:opacity-50"
+              className="w-full dark:bg-white bg-gray-900 dark:text-black text-white font-medium rounded-lg px-5 py-2.5 text-center hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-800 disabled:opacity-50"
             >
               {isSubmitting ? 'Signing in...' : 'Sign in'}
             </motion.button>
@@ -170,6 +170,7 @@ const Login = () => {
               Not registered?{' '}
               <button
                 type="button"
+                   onClick={()=> location.href = '/register'}
                 className="text-blue-500 hover:underline"
               >
                 Create account
